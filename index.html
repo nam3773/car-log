@@ -4,244 +4,160 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>법인 차량 운행일지 & 점검 앱</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-    .active-tab { color: #2563eb; border-top: 2px solid #2563eb; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f3f4f6; color: #333; }
+    .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background: #ffffff; display: flex; flex-direction: column; position: relative; padding-bottom: 70px; }
+    header { background-color: #2563eb; color: white; padding: 16px; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    header h1 { font-size: 18px; font-weight: bold; }
+    header p { font-size: 12px; opacity: 0.9; }
+    main { padding: 16px; flex: 1; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #4b5563; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; background: #fff; }
+    input[readonly] { background-color: #f3f4f6; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .km-box { background: #eff6ff; padding: 12px; border-radius: 8px; border: 1px solid #bfdbfe; margin-bottom: 12px; }
+    .km-result { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #bfdbfe; font-weight: bold; }
+    .chk-box { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px; }
+    .chk-item { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 6px; }
+    .chk-item input { width: auto; }
+    .issue-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+    .issue-box label { color: #dc2626; }
+    .btn-submit { width: 100%; background: #2563eb; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+    .btn-submit:disabled { background: #93c5fd; }
+    nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: white; border-top: 1px solid #e5e7eb; display: flex; z-index: 20; }
+    nav button { flex: 1; border: none; background: none; padding: 10px 0; font-size: 12px; color: #6b7280; font-weight: bold; cursor: pointer; }
+    nav button.active { color: #2563eb; border-top: 2px solid #2563eb; }
+    .log-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 12px; }
+    .log-card.issue { background: #fef2f2; border-color: #fca5a5; }
+    .card-head { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 4px; }
+    .card-sub { color: #6b7280; margin-bottom: 4px; }
+    .card-desc { color: #4b5563; border-top: 1px solid #f3f4f6; padding-top: 4px; display: flex; justify-content: space-between; }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+    .badge-ok { background: #dcfce7; color: #15803d; }
+    .badge-warn { background: #fee2e2; color: #b91c1c; }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
 
-  <div class="app-container relative pb-20">
-    
-    <!-- Header -->
-    <header class="bg-blue-600 text-white px-5 py-4 flex justify-between items-center sticky top-0 z-10 shadow-md">
-      <div>
-        <h1 class="font-bold text-lg leading-tight">스마트 차량 관리</h1>
-        <p class="text-xs text-blue-100">현대그린파워 | 법인 차량 운행일지</p>
-      </div>
+  <div class="app-container">
+    <header>
+      <h1>스마트 차량 관리</h1>
+      <p>현대그린파워 | 법인 차량 운행일지</p>
     </header>
 
-    <main class="p-5 flex-1">
-      
-      <!-- TAB 1: 운행일지 작성 -->
-      <section id="tab-log" class="tab-content block">
-        <h2 class="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-pen-to-square text-blue-600"></i> 운행일지 & 점검 작성
-        </h2>
-
-        <form id="drive-form" onsubmit="saveDriveLog(event)" class="space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">등록 차량</label>
-              <select id="car-num" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500">
-                <option value="59부3785 (소나타)" selected>소나타 (59부3785)</option>
+    <main>
+      <!-- TAB 1: 작성 -->
+      <section id="tab-log" class="tab-content active">
+        <h2 style="font-size: 15px; margin-bottom: 12px;">📝 운행일지 & 점검 작성</h2>
+        <form id="drive-form" onsubmit="saveDriveLog(event)">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>등록 차량</label>
+              <select id="car-num">
+                <option value="59부3785 (소나타)">소나타 (59부3785)</option>
                 <option value="263마8134 (싼타페)">싼타페 (263마8134)</option>
                 <option value="90루4093 (봉고3)">봉고3 (90루4093)</option>
               </select>
             </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">운전자명</label>
-              <input type="text" id="driver-name" placeholder="운전자 성명" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500">
+            <div class="form-group">
+              <label>운전자명</label>
+              <input type="text" id="driver-name" placeholder="성명 입력" required>
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">운행 목적</label>
-            <select id="drive-purpose" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500">
+          <div class="form-group">
+            <label>운행 목적</label>
+            <select id="drive-purpose">
               <option value="일반 업무용">일반 업무용</option>
               <option value="출ㆍ퇴근용">출ㆍ퇴근용</option>
               <option value="비업무용">비업무용</option>
             </select>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">운행 상세 내용 / 비고</label>
-            <input type="text" id="destination" placeholder="예: 업무협의, 우체국 방문 등" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500">
+          <div class="form-group">
+            <label>운행 상세 내용 / 비고</label>
+            <input type="text" id="destination" placeholder="예: 업무협의, 우체국 방문" required>
           </div>
 
-          <div class="bg-blue-50/50 p-3.5 rounded-lg border border-blue-100 space-y-3">
-            <div class="flex justify-between items-center">
-              <span class="text-xs font-bold text-gray-700">계기판 누적거리 (km)</span>
-              <span id="loading-indicator" class="text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">완료</span>
+          <div class="km-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:bold;">계기판 누적거리 (km)</span>
+              <span id="loading-indicator" style="font-size:10px; color:#2563eb;">동기화 중...</span>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid-2" style="margin-top: 8px;">
               <div>
-                <label class="block text-xs text-gray-500 mb-1">출발 전</label>
-                <input type="number" id="start-km" value="0" oninput="calculateDistance()" required class="w-full border border-gray-300 rounded-lg p-2 text-sm text-right bg-gray-100" readonly>
+                <label>출발 전</label>
+                <input type="number" id="start-km" value="0" readonly>
               </div>
               <div>
-                <label class="block text-xs text-gray-500 mb-1">도착 후</label>
-                <input type="number" id="end-km" placeholder="계기판 입력" oninput="calculateDistance()" required class="w-full border border-gray-300 rounded-lg p-2 text-sm text-right focus:ring-2 focus:ring-blue-500">
+                <label>도착 후</label>
+                <input type="number" id="end-km" placeholder="계기판 입력" oninput="calculateDistance()" required>
               </div>
             </div>
-            <div class="flex justify-between items-center pt-2 border-t border-blue-100">
-              <span class="text-xs font-semibold text-gray-600">주행 거리:</span>
-              <span class="text-base font-extrabold text-blue-600" id="total-distance">0 km</span>
+            <div class="km-result">
+              <span style="font-size:12px;">주행 거리:</span>
+              <span id="total-distance" style="color:#2563eb; font-size:16px;">0 km</span>
             </div>
           </div>
 
-          <div class="border border-gray-200 rounded-lg p-3.5 bg-slate-50 space-y-2">
-            <span class="text-xs font-bold text-gray-700 block mb-1">
-              <i class="fa-solid fa-square-check text-blue-600 mr-1"></i> 운행 후 점검 리스트
-            </span>
-            <div class="grid grid-cols-1 gap-2">
-              <label class="flex items-center text-xs font-medium text-gray-700 bg-white p-2 rounded border border-gray-200 cursor-pointer">
-                <input type="checkbox" id="chk-park" checked class="w-4 h-4 text-blue-600 rounded mr-2"> 지정 주차자리에 주차 완료
-              </label>
-              <label class="flex items-center text-xs font-medium text-gray-700 bg-white p-2 rounded border border-gray-200 cursor-pointer">
-                <input type="checkbox" id="chk-light" checked class="w-4 h-4 text-blue-600 rounded mr-2"> 운행 후 전조등 확인
-              </label>
-              <label class="flex items-center text-xs font-medium text-gray-700 bg-white p-2 rounded border border-gray-200 cursor-pointer">
-                <input type="checkbox" id="chk-cargo" checked class="w-4 h-4 text-blue-600 rounded mr-2"> 화물 적재 후 정리정돈 확인
-              </label>
-              <label class="flex items-center text-xs font-medium text-gray-700 bg-white p-2 rounded border border-gray-200 cursor-pointer">
-                <input type="checkbox" id="chk-clean" checked class="w-4 h-4 text-blue-600 rounded mr-2"> 운행 후 최종 정리정돈 확인 (쓰레기 등)
-              </label>
-            </div>
+          <div class="chk-box">
+            <label style="margin-bottom:8px;">✅ 운행 후 점검 리스트</label>
+            <div class="chk-item"><input type="checkbox" id="chk-park" checked> 지정 주차자리에 주차 완료</div>
+            <div class="chk-item"><input type="checkbox" id="chk-light" checked> 운행 후 전조등 확인</div>
+            <div class="chk-item"><input type="checkbox" id="chk-cargo" checked> 화물 적재 후 정리정돈 확인</div>
+            <div class="chk-item"><input type="checkbox" id="chk-clean" checked> 운행 후 차량 내 쓰레기 정리</div>
           </div>
 
-          <!-- 🚨 차량 이상 / 정비 요청사항 입력란 -->
-          <div>
-            <label class="block text-xs font-bold text-red-600 mb-1">
-              <i class="fa-solid fa-triangle-exclamation mr-1"></i> 차량 이상 / 정비 요청사항 (선택)
-            </label>
-            <textarea id="issue-note" rows="2" placeholder="예: 워셔액 부족, 경고등 점등 등 (없으면 빈칸)" class="w-full border border-red-200 rounded-lg p-2.5 text-sm bg-red-50/30 focus:ring-2 focus:ring-red-500"></textarea>
+          <div class="issue-box">
+            <label>⚠️ 차량 이상 / 정비 요청사항 (선택)</label>
+            <textarea id="issue-note" rows="2" placeholder="예: 워셔액 부족, 경고등 점등 등 (없으면 빈칸)"></textarea>
           </div>
 
-          <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition duration-200">
-            저장하기
-          </button>
+          <button type="submit" id="submit-btn" class="btn-submit">저장하기</button>
         </form>
       </section>
 
-      <!-- TAB 2: 운행 이력 탭 -->
-      <section id="tab-admin" class="tab-content hidden space-y-4">
-        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-gray-700">차량별 조회</span>
-            <button onclick="fetchDriveLogs()" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-600">
-              <i class="fa-solid fa-rotate-right mr-1"></i>새로고침
-            </button>
-          </div>
-          <select id="filter-car" onchange="renderLogList()" class="w-full border border-gray-300 rounded-lg p-2 text-xs font-semibold bg-gray-50 focus:ring-2 focus:ring-blue-500">
+      <!-- TAB 2: 이력 -->
+      <section id="tab-admin" class="tab-content">
+        <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <select id="filter-car" onchange="renderLogList()" style="flex:1;">
             <option value="전체">전체 차량 보기</option>
             <option value="59부3785 (소나타)">소나타 (59부3785)</option>
             <option value="263마8134 (싼타페)">싼타페 (263마8134)</option>
             <option value="90루4093 (봉고3)">봉고3 (90루4093)</option>
           </select>
+          <button onclick="fetchDriveLogs()" style="padding:0 12px; border-radius:8px; border:1px solid #ccc; background:#fff;">🔄 Refresh</button>
         </div>
 
-        <div class="bg-slate-800 text-white rounded-xl p-3 shadow-md flex justify-around text-center">
+        <div style="background:#1e293b; color:white; padding:12px; border-radius:8px; display:flex; justify-content:space-around; text-align:center; margin-bottom:12px;">
           <div>
-            <span class="text-[11px] text-slate-400 block">조회된 운행 건수</span>
-            <span class="text-base font-bold text-white" id="stat-count">0건</span>
+            <div style="font-size:10px; color:#94a3b8;">운행 건수</div>
+            <div id="stat-count" style="font-weight:bold;">0건</div>
           </div>
-          <div class="border-r border-slate-700"></div>
           <div>
-            <span class="text-[11px] text-slate-400 block">조회된 주행거리</span>
-            <span class="text-base font-bold text-emerald-400" id="stat-work">0 km</span>
+            <div style="font-size:10px; color:#94a3b8;">총 주행거리</div>
+            <div id="stat-work" style="font-weight:bold; color:#4ade80;">0 km</div>
           </div>
         </div>
 
-        <div id="log-list" class="space-y-2.5"></div>
+        <div id="log-list"></div>
       </section>
-
-      <!-- TAB 3: 차량 가이드북 탭 -->
-      <section id="tab-guide" class="tab-content hidden space-y-4">
-        <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
-          <i class="fa-solid fa-book-bookmark text-blue-600"></i> 업무용 차량 운행 가이드북
-        </h2>
-
-        <div class="bg-red-50 border border-red-200 rounded-xl p-3.5 space-y-2 shadow-sm">
-          <span class="text-xs font-bold text-red-700 flex items-center gap-1">
-            <i class="fa-solid fa-phone-volume"></i> 비상 및 상황 발생 시 연락처
-          </span>
-          <div class="text-xs space-y-1.5 text-gray-700 pt-1">
-            <div class="flex justify-between items-center bg-white p-2 rounded border border-red-100">
-              <span>총무팀 김남주 사원(정)</span>
-              <a href="tel:041-680-7612" class="font-bold text-blue-600">041-680-7612</a>
-            </div>
-            <div class="flex justify-between items-center bg-white p-2 rounded border border-red-100">
-              <span>총무팀 지동혁 매니저(부)</span>
-              <a href="tel:041-680-7613" class="font-bold text-blue-600">041-680-7613</a>
-            </div>
-            <div class="flex justify-between items-center bg-white p-2 rounded border border-red-100">
-              <span>현대해상 대표 콜센터</span>
-              <a href="tel:1588-5656" class="font-bold text-red-600">1588-5656</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <img src="https://lh3.googleusercontent.com/d/1hzlSDpMT0IDuVpBnsCtg5d4XAph9pLbE" alt="소나타 비상용품" class="w-full h-48 object-cover">
-          <div class="p-3.5 space-y-2">
-            <div class="flex justify-between items-center border-b border-gray-100 pb-1.5">
-              <span class="font-bold text-sm text-gray-800">59부3785 (LF소나타 2.0)</span>
-              <span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded">가솔린</span>
-            </div>
-            <div class="space-y-1">
-              <span class="text-xs font-semibold text-gray-600 block">📦 비상용품 보관 위치</span>
-              <p class="text-xs text-gray-700 font-medium">📍 트렁크 바닥 매트 아래 공간</p>
-              <p class="text-[11px] text-gray-500">구비품목: 소화기, 경고 삼각대, 경광봉, 워셔액, 타월 등</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <img src="https://lh3.googleusercontent.com/d/1ryKxpjCFeFfO87AOlk1JXbQyPp-F_zAu" alt="싼타페 비상용품" class="w-full h-48 object-cover">
-          <div class="p-3.5 space-y-2">
-            <div class="flex justify-between items-center border-b border-gray-100 pb-1.5">
-              <span class="font-bold text-sm text-gray-800">263마8134 (싼타페)</span>
-              <span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded">가솔린</span>
-            </div>
-            <div class="space-y-1">
-              <span class="text-xs font-semibold text-gray-600 block">📦 비상용품 보관 위치</span>
-              <p class="text-xs text-gray-700 font-medium">📍 트렁크 바닥 언더트레이(매트 아래)</p>
-              <p class="text-[11px] text-gray-500">구비품목: 소화기, 경고 삼각대, 경광봉, 타이어 리페어 킷</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <img src="https://lh3.googleusercontent.com/d/1P-WpmhOE6v2OyrdpIlUcLmB-W8h2HfDO" alt="봉고3 비상용품" class="w-full h-48 object-cover">
-          <div class="p-3.5 space-y-2">
-            <div class="flex justify-between items-center border-b border-gray-100 pb-1.5">
-              <span class="font-bold text-sm text-gray-800">90루4093 (봉고3)</span>
-              <span class="text-xs bg-amber-50 text-amber-600 font-semibold px-2 py-0.5 rounded">디젤</span>
-            </div>
-            <div class="space-y-1">
-              <span class="text-xs font-semibold text-gray-600 block">📦 비상용품 보관 위치</span>
-              <p class="text-xs text-gray-700 font-medium">📍 운전석/조수석 시트 뒤쪽 공간</p>
-              <p class="text-[11px] text-gray-500">구비품목: 소화기, 경고 삼각대, 경광봉, 적재함 결속 로프</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 max-w-[480px] mx-auto flex justify-around py-2 z-20">
-      <button onclick="switchTab('log')" id="nav-log" class="active-tab flex-1 flex flex-col items-center justify-center py-1 text-gray-500">
-        <i class="fa-solid fa-car text-lg mb-1"></i>
-        <span class="text-xs font-semibold">운행일지</span>
-      </button>
-      <button onclick="switchTab('admin')" id="nav-admin" class="flex-1 flex flex-col items-center justify-center py-1 text-gray-500">
-        <i class="fa-solid fa-list-check text-lg mb-1"></i>
-        <span class="text-xs font-semibold">운행 이력</span>
-      </button>
-      <button onclick="switchTab('guide')" id="nav-guide" class="flex-1 flex flex-col items-center justify-center py-1 text-gray-500">
-        <i class="fa-solid fa-book-open text-lg mb-1"></i>
-        <span class="text-xs font-semibold">가이드북</span>
-      </button>
+    <nav>
+      <button onclick="switchTab('log')" id="nav-log" class="active">운행일지</button>
+      <button onclick="switchTab('admin')" id="nav-admin">운행 이력</button>
     </nav>
-
   </div>
 
   <script>
+    // ★ 본인의 구글 앱스 스크립트 웹 앱 URL로 반드시 확인/변경 필요 ★
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzz-YOUR-SCRIPT-ID-HERE/exec";
+
     let driveLogs = [];
 
     function isCarMatch(logCarStr, targetCarStr) {
@@ -266,21 +182,21 @@
     }
 
     function fetchDriveLogs() {
-      document.getElementById('loading-indicator').innerText = '동기화 중...';
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(data) {
-            driveLogs = data || [];
-            updateStartKmByCar();
-            document.getElementById('loading-indicator').innerText = '시트 동기화 완료';
-            renderLogList();
-          })
-          .withFailureHandler(function(err) {
-            document.getElementById('loading-indicator').innerText = '동기화 실패';
-            console.error(err);
-          })
-          .getDriveLogs();
-      }
+      const indicator = document.getElementById('loading-indicator');
+      if (indicator) indicator.innerText = '동기화 중...';
+
+      fetch(GAS_URL + "?action=getLogs")
+        .then(res => res.json())
+        .then(data => {
+          driveLogs = data || [];
+          updateStartKmByCar();
+          if (indicator) indicator.innerText = '동기화 완료';
+          renderLogList();
+        })
+        .catch(err => {
+          console.error(err);
+          if (indicator) indicator.innerText = '동기화 실패';
+        });
     }
 
     function updateStartKmByCar() {
@@ -305,25 +221,21 @@
       const totalElem = document.getElementById('total-distance');
       if (totalKm >= 0) {
         totalElem.innerText = `${totalKm} km`;
-        totalElem.classList.remove('text-red-500');
-        totalElem.classList.add('text-blue-600');
+        totalElem.style.color = '#2563eb';
       } else {
         totalElem.innerText = '거리 오류';
-        totalElem.classList.remove('text-blue-600');
-        totalElem.classList.add('text-red-500');
+        totalElem.style.color = '#dc2626';
       }
     }
 
     function switchTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-tab', 'text-blue-600'));
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
 
-      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-      document.getElementById(`nav-${tabName}`).classList.add('active-tab');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      document.getElementById(`nav-${tabName}`).classList.add('active');
 
-      if (tabName === 'admin') {
-        renderLogList();
-      }
+      if (tabName === 'admin') renderLogList();
     }
 
     function saveDriveLog(e) {
@@ -359,28 +271,30 @@
         issueNote: document.getElementById('issue-note').value
       };
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(res) {
-            alert('성공적으로 저장되었습니다!');
-            document.getElementById('end-km').value = '';
-            document.getElementById('destination').value = '';
-            document.getElementById('driver-name').value = '';
-            document.getElementById('issue-note').value = '';
-            document.getElementById('total-distance').innerText = '0 km';
-            
-            fetchDriveLogs();
-            switchTab('admin');
-            btn.disabled = false;
-            btn.innerText = '저장하기';
-          })
-          .withFailureHandler(function(err) {
-            alert('저장에 실패했습니다.');
-            btn.disabled = false;
-            btn.innerText = '저장하기';
-          })
-          .saveLogFromForm(payload);
-      }
+      fetch(GAS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert('성공적으로 저장 요청을 보냈습니다!');
+        document.getElementById('end-km').value = '';
+        document.getElementById('destination').value = '';
+        document.getElementById('driver-name').value = '';
+        document.getElementById('issue-note').value = '';
+        document.getElementById('total-distance').innerText = '0 km';
+        
+        setTimeout(fetchDriveLogs, 1500);
+        switchTab('admin');
+        btn.disabled = false;
+        btn.innerText = '저장하기';
+      })
+      .catch(err => {
+        alert('저장 중 오류가 발생했습니다.');
+        btn.disabled = false;
+        btn.innerText = '저장하기';
+      });
     }
 
     function renderLogList() {
@@ -398,25 +312,20 @@
         totalKmAcc += Number(log.distance) || 0;
 
         const hasIssue = log.issueNote && String(log.issueNote).trim() !== "";
-        const cardStyle = hasIssue 
-          ? 'p-3 bg-red-50 border-2 border-red-400 rounded-lg shadow-sm text-xs space-y-1' 
-          : 'p-3 bg-white border border-gray-200 rounded-lg shadow-sm text-xs space-y-1';
-
         const item = document.createElement('div');
-        item.className = cardStyle;
+        item.className = hasIssue ? 'log-card issue' : 'log-card';
+        
         item.innerHTML = `
-          <div class="flex justify-between font-bold text-gray-800">
-            <span>${formatDate(log.date)} | ${log.driver} <span class="text-[10px] text-gray-500 font-normal">(${log.car})</span> <span class="ml-1 text-[10px] font-normal px-1.5 py-0.5 rounded ${log.check === '양호' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">후점검: ${log.check}</span></span>
-            <span class="text-blue-600 font-extrabold">+${log.distance} km</span>
+          <div class="card-head">
+            <span>${formatDate(log.date)} | ${log.driver} <span class="badge ${log.check === '양호' ? 'badge-ok' : 'badge-warn'}">${log.check}</span></span>
+            <span style="color:#2563eb;">+${log.distance} km</span>
           </div>
-          <div class="text-gray-600">
-            주행 전: ${Number(log.startKm).toLocaleString()}km → 주행 후: ${Number(log.endKm).toLocaleString()}km
+          <div class="card-sub">차량: ${log.car} | ${Number(log.startKm).toLocaleString()}km → ${Number(log.endKm).toLocaleString()}km</div>
+          <div class="card-desc">
+            <span>목적: ${log.dest}</span>
+            <span style="color:#2563eb;">${log.purpose}</span>
           </div>
-          <div class="text-gray-500 flex justify-between pt-1 border-t ${hasIssue ? 'border-red-200' : 'border-gray-100'}">
-            <span>목적/비고: ${log.dest}</span>
-            <span class="text-blue-500 font-medium">${log.purpose}</span>
-          </div>
-          ${hasIssue ? `<div class="mt-2 p-2 bg-red-100/80 border border-red-200 rounded text-red-700 font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> 요청사항: ${log.issueNote}</div>` : ''}
+          ${hasIssue ? `<div style="margin-top:6px; color:#dc2626; font-weight:bold;">⚠️ 요청: ${log.issueNote}</div>` : ''}
         `;
         listContainer.appendChild(item);
       });
